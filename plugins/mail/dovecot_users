@@ -143,14 +143,14 @@ sub parseLogfile
         my $line = <$logfd>;
         chomp ($line);
 
-        if($line =~ /dovecot/i) 
+        if($line =~ /dovecot/) 
         {
-            if($line =~ /Login/i)
+            if($line =~ /Login/)
             {
                 $logins++;
 
             }
-            elsif($line =~ /Disconnected/i)
+            elsif($line =~ /Disconnected/)
             {
                 $disconnects++;
             }

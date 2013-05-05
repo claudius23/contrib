@@ -182,19 +182,19 @@ sub parseLogfile
         my $line = <$logfd>;
         chomp ($line);
 
-        if($line =~ /dovecot/i) 
+        if($line =~ /dovecot/) 
         {
-            if($line =~ /imap-login/i)
+            if($line =~ /imap-login/)
             {
-                if($line =~ /secured/i)
+                if($line =~ /secured/)
                 {
                     $imapd_secured++;
                 }
-                elsif($line =~ /SSL/i) 
+                elsif($line =~ /SSL/) 
                 {
                     $imapd_ssl++;
                 }
-                elsif($line =~ /TLS/i)
+                elsif($line =~ /TLS/)
                 {
                     $imapd_tls++;
                 }
@@ -203,17 +203,17 @@ sub parseLogfile
                     $imapd++;
                 }
             }
-            elsif($line =~ /pop3-login/i)
+            elsif($line =~ /pop3-login/)
             {
-                if($line =~ /secured/i)
+                if($line =~ /secured/)
                 {
                     $pop3d_secured++;
                 }
-                elsif($line =~ /SSL/i)
+                elsif($line =~ /SSL/)
                 {
                     $pop3d_ssl++;
                 }
-                elsif($line =~ /TLS/i)
+                elsif($line =~ /TLS/)
                 {
                     $pop3d_tls++;
                 }
