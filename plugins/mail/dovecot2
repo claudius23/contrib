@@ -95,6 +95,9 @@ if ( $ARGV[0] and $ARGV[0] eq "config" )
     print "graph_period minute\n";
     print "graph_total  Total Logins\n";
 
+    print "connected.label Connected Users\n";
+    print "connected.type GAUGE\n";
+    print "connected.info Number of Users curently connected\n";
     print "imapd_login.label IMAP Logins\n";
     print "imapd_login.type DERIVE\n";
     print "imapd_login.info Emails dovecot thinks probably contain spam\n";
@@ -124,6 +127,7 @@ if ( $ARGV[0] and $ARGV[0] eq "config" )
 
 if (! -f $logfile) 
 {
+    print "connected.value U\n";
     print "imapd_login.value U\n";
     print "imapd_secured_login.value U\n";
     print "imapd_ssl_login.value U\n";
@@ -135,8 +139,11 @@ if (! -f $logfile)
     exit 0;
 }
 
-my ($pos, $imapd_login, $imapd_secured_login, $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login, $pop3d_ssl_login, $pop3d_tls_login) = restore_state();
+my ($pos, $disconnects, $imapd_login, $imapd_secured_login, 
+    $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login,
+    $pop3d_ssl_login, $pop3d_tls_login) = restore_state();
 
+$disconnects = 0 unless defined($disconnects);
 $imapd_login = 0 unless defined($imapd_login);
 $imapd_secured_login = 0 unless defined($imapd_secured_login);
 $imapd_ssl_login = 0 unless defined($imapd_ssl_login);
@@ -156,6 +163,16 @@ if (!defined $pos)
 
 $pos = parseLogfile($logfile, $pos, $startsize);
 
+my $connected = - $disconnects + $imapd_login + $imapd_secured_login 
+   + $imapd_ssl_login + $imapd_tls_login + $pop3d_login + $pop3d_secured_login 
+   + $pop3d_ssl_login + $pop3d_tls_login;
+
+if($connected < 0)
+    {
+        $connected = 0
+    }
+
+print "connected.value $connected\n";
 print "imapd_login.value $imapd_login\n";
 print "imapd_secured_login.value $imapd_secured_login\n";
 print "imapd_ssl_login.value $imapd_ssl_login\n";
@@ -165,7 +182,9 @@ print "pop3d_secured_login.value $pop3d_secured_login\n";
 print "pop3d_ssl_login.value $pop3d_ssl_login\n";
 print "pop3d_tls_login.value $pop3d_tls_login\n";
 
-save_state($pos, $imapd_login, $imapd_secured_login, $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login, $pop3d_ssl_login, $pop3d_tls_login);
+save_state($pos, $disconnects, $imapd_login, $imapd_secured_login,
+    $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login,
+    $pop3d_ssl_login, $pop3d_tls_login);
 
 sub parseLogfile 
 {    
@@ -218,6 +237,10 @@ sub parseLogfile
                             $pop3d_login++;
                         }
                 }
+	        elsif($line =~ /Disconnected/i)
+	        {
+	            $disconnects++;
+	        }
 	}
 
     }
