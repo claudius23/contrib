@@ -1,153 +1,251 @@
-#! /bin/bash
-#
-# Munin Plugin
-# to count logins to your dovecot mailserver
-# 
-# Created by Dominik Schulz <lkml@ds.gauner.org>
-# http://developer.gauner.org/munin/
-# Contributions by:
-# - Stephane Enten <tuf@delyth.net>
-# 
-# Parameters understood:
-#
-#	config		(required)
-#	autoconf 	(optional - used by munin-config)
-# 
-# Config variables:
-#
-#       logfile      - Where to find the syslog file
-#
-# Add the following line to a file in /etc/munin/plugin-conf.d:
-# 	env.logfile /var/log/your/logfile.log
-#
-# Magic markers (optional - used by munin-config and installation scripts):
-#
-#%# family=auto
-#%# capabilities=autoconf
+#!@@PERL@@
+# -*- perl -*-
 
-######################
-# Configuration
-######################
-STAT_FILE=${STAT_FILE:-/var/lib/munin/plugin-state/plugin-dovecot.state}
-EXPR_BIN=/usr/bin/expr
-LOGFILE=${logfile:-/var/log/mail.log}
-######################
+=head1 NAME
 
-if [ "$1" = "autoconf" ]; then
-	echo yes
-	exit 0
-fi
+dovecot - plugin to monitor the dovecot mail server logins
 
-if [ "$1" = "config" ]; then
-	echo 'graph_title Dovecot Logins'
-	echo 'graph_category Mail'
-	echo 'graph_args --base 1000 -l 0'
-	echo 'graph_vlabel Login Counters'
-	echo 'login_total.label Total Logins'
-	echo 'login_tls.label TLS Logins'
-	echo 'login_ssl.label SSL Logins'
-	echo 'login_imap.label IMAP Logins'
-	echo 'login_pop3.label POP3 Logins'
-	echo 'connected.label Connected Users'
-	exit 0
-fi
+=head1 APPLICABLE SYSTEMS
 
-#############################
-# Initialization
-#############################
-if [ ! -r $STAT_FILE ]; then
-	echo "TOTAL=0" > $STAT_FILE
-	echo "TLS=0" >> $STAT_FILE
-	echo "SSL=0" >> $STAT_FILE
-	echo "IMAP=0" >> $STAT_FILE
-	echo "POP3=0" >> $STAT_FILE
-fi
-#############################
+Hosts running dovecot
 
+=head1 CONFIGURATION
 
-######################
-# Total Logins
-######################
-echo -en "login_total.value "
-NEW_TOTAL=$(egrep '[dovecot]?.*Login' $LOGFILE | grep "`date '+%b %e'`" | sort | wc -l)
-OLD_TOTAL=$(grep TOTAL $STAT_FILE | cut -f2 -d '=')
-TOTAL=$($EXPR_BIN $NEW_TOTAL - $OLD_TOTAL)
-if [ $TOTAL -gt 0 ]; then
-	echo "$TOTAL"
-else
-	echo "0"
-fi
-echo -n
-######################
-# Connected Users
-######################
-DISCONNECTS=$(egrep '[dovecot]?.*Disconnected' $LOGFILE | sort | wc -l)
-CONNECTS=$(egrep '[dovecot]?.*Login' $LOGFILE | sort | wc -l)
-DISCON=$($EXPR_BIN $CONNECTS - $DISCONNECTS)
-if [ $DISCON -lt 0 ]; then
-	DISCON=0
-fi
-echo -en "connected.value "
-echo $DISCON
-echo -n
-######################
-# TLS Logins
-######################
-echo -en "login_tls.value "
-NEW_TLS=$(egrep '[dovecot]?.*Login.*TLS' $LOGFILE | grep "`date '+%b %e'`" | sort | wc -l)
-OLD_TLS=$(grep TLS $STAT_FILE | cut -f2 -d '=')
-TLS=$($EXPR_BIN $NEW_TLS - $OLD_TLS)
-if [ $TLS -gt 0 ]; then
-	echo "$TLS"
-else
-	echo "0"
-fi
-echo -n
-######################
-# SSL Logins
-######################
-echo -en "login_ssl.value "
-NEW_SSL=$(egrep '[dovecot]?.*Login.*SSL' $LOGFILE | grep "`date '+%b %e'`" | sort | wc -l)
-OLD_SSL=$(grep SSL $STAT_FILE | cut -f2 -d '=')
-SSL=$($EXPR_BIN $NEW_SSL - $OLD_SSL)
-if [ $SSL -gt 0 ]; then
-	echo "$SSL"
-else
-	echo "0"
-fi
-echo -n
-######################
-# IMAP Logins
-######################
-echo -en "login_imap.value "
-NEW_IMAP=$(egrep '[dovecot]?.*imap.*Login' $LOGFILE | grep "`date '+%b %e'`" | sort | wc -l)
-OLD_IMAP=$(grep IMAP $STAT_FILE | cut -f2 -d '=')
-IMAP=$($EXPR_BIN $NEW_IMAP - $OLD_IMAP)
-if [ $IMAP -gt 0 ]; then
-	echo "$IMAP"
-else
-	echo "0"
-fi
-echo -n
-######################
-# POP3 Logins
-######################
-echo -en "login_pop3.value "
-NEW_POP3=$(egrep '[dovecot]?.*pop3.*Login' $LOGFILE | grep "`date '+%b %e'`" | sort | wc -l)
-OLD_POP3=$(grep POP3 $STAT_FILE | cut -f2 -d '=')
-POP3=$($EXPR_BIN $NEW_POP3 - $OLD_POP3)
-if [ $POP3 -gt 0 ]; then
-	echo "$POP3"
-else
-	echo "0"
-fi
-echo -n
-######################
-# Save the new values
-######################
-echo "TOTAL=$NEW_TOTAL" > $STAT_FILE
-echo "TLS=$NEW_TLS" >> $STAT_FILE
-echo "SSL=$NEW_SSL" >> $STAT_FILE 
-echo "IMAP=$NEW_IMAP" >> $STAT_FILE
-echo "POP3=$NEW_POP3" >> $STAT_FILE
+Configuration parameters for @@CONFDIR@@/dovecot,
+if you need to override the defaults below:
 
+ [dovecot]
+  env.logdir  - Which logfile to use
+  env.logfile - What file to read in logdir
+
+=head2 DEFAULT CONFIGURATION
+
+ [dovecot]
+  env.logdir  /var/log
+  env.logfile mail.log
+
+=head1 AUTHOR
+
+Claudius Herder
+
+=head1 LICENSE
+
+GPLv2
+
+=head1 MAGIC MARKERS
+
+=begin comment
+
+These magic markers are used by munin-node-configure when installing
+munin-node.
+
+=end comment
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+use strict;
+use warnings;
+
+use Munin::Plugin;
+
+my $LOGDIR  = (defined($ENV{'logdir'}) ? $ENV{'logdir'} : '/var/log');
+my $LOGFILE = (defined($ENV{'logdir'}) ? $ENV{'logfile'} : 'mail.info');
+
+my $logfile = "$LOGDIR/$LOGFILE";
+
+if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
+{
+    if (-d $LOGDIR)
+    {
+    if (-f $logfile)
+    {
+            if (-r $logfile)
+            {
+                print "yes\n";
+                exit 0;
+            }
+            else
+            {
+                print "no (logfile '$logfile' not readable)\n";
+            }
+    }
+    else
+    {
+        print "no (logfile '$logfile' not found)\n";
+    }
+    }
+    else
+    {
+        print "no (could not find logdir '$LOGDIR')\n";
+    }
+
+    exit 0;
+}
+
+if ( $ARGV[0] and $ARGV[0] eq "config" )
+{
+    print "graph_title dovecot filter statistics\n";
+    print "graph_vlabel logins / \${graph_period}\n";
+    print "graph_category dovecot\n";
+    print "graph_scale no\n";
+    print "graph_args --base 1000 -l 0\n";
+    print "graph_period minute\n";
+
+    print "connected.label connected users\n";
+    print "connected.type GAUGE\n";
+    print "connected.info Number of users curently connected\n";
+    print "imapd_login.label IMAP logins\n";
+    print "imapd_login.type DERIVE\n";
+    print "imapd_login.info Number of unencrypted imapd logins\n";
+    print "imapd_secured_login.label IMAP secured logins \n";
+    print "imapd_secured_login.type DERIVE\n";
+    print "imapd_secured_login.info Number of imapd secured logins\n";
+    print "imapd_ssl_login.label IMAP SSL logins \n";
+    print "imapd_ssl_login.type DERIVE\n";
+    print "imapd_ssl_login.info Number of imapd SSL logins\n";
+    print "imapd_tls_login.label IMAP TLS logins \n";
+    print "imapd_tls_login.type DERIVE\n";
+    print "imapd_tls_login.info Number of imapd TLS logins\n";
+    print "pop3d_login.label POP3 logins\n";
+    print "pop3d_login.type DERIVE\n";
+    print "pop3d_login.info Number of unencrypted pop3d logins\n";
+    print "pop3d_secured_login.label POP3 secured logins\n";
+    print "pop3d_secured_login.type DERIVE\n";
+    print "pop3d_secured_login.info Number of pop3d secured logins\n";
+    print "pop3d_ssl_login.label POP3 SSL logins\n";
+    print "pop3d_ssl_login.type DERIVE\n";
+    print "pop3d_ssl_login.info Number of pop3d SSL logins\n";
+    print "pop3d_tls_login.label POP3 TLS logins\n";
+    print "pop3d_tls_login.type DERIVE\n";
+    print "pop3d_tls_login.info Number of pop3d TLS logins\n";
+    print "total.label Total logins\n";
+    print "total.type DERIVE\n";
+    print "total.info Number of total logins\n";
+    exit 0;
+}
+
+if (! -f $logfile) 
+{
+    print "connected.value U\n";
+    print "imapd_login.value U\n";
+    print "imapd_secured_login.value U\n";
+    print "imapd_ssl_login.value U\n";
+    print "imapd_tls_login.value U\n";
+    print "pop3d_login.value U\n";
+    print "pop3d_secured_login.value U\n";
+    print "pop3d_ssl_login.value U\n";
+    print "pop3d_tls_login.value U\n";
+    print "total.value U\n";
+    exit 0;
+}
+
+my ($pos, $disconnects, $imapd_login, $imapd_secured_login, 
+    $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login,
+    $pop3d_ssl_login, $pop3d_tls_login, $total) = restore_state();
+
+$disconnects = 0 unless defined($disconnects);
+$imapd_login = 0 unless defined($imapd_login);
+$imapd_secured_login = 0 unless defined($imapd_secured_login);
+$imapd_ssl_login = 0 unless defined($imapd_ssl_login);
+$imapd_tls_login = 0 unless defined($imapd_tls_login);
+$pop3d_login = 0 unless defined($pop3d_login);
+$pop3d_secured_login = 0 unless defined($pop3d_secured_login);
+$pop3d_ssl_login = 0 unless defined($pop3d_ssl_login);
+$pop3d_tls_login = 0 unless defined($pop3d_tls_login);
+$total = 0 unless defined($total);
+
+my $startsize = (stat $logfile)[7];
+
+if (!defined $pos)
+{
+    # Initial run.
+    $pos = $startsize;
+}
+
+$pos = parseLogfile($logfile, $pos, $startsize);
+
+my $connected = - $disconnects + $total;
+
+print "connected.value $connected\n";
+print "imapd_login.value $imapd_login\n";
+print "imapd_secured_login.value $imapd_secured_login\n";
+print "imapd_ssl_login.value $imapd_ssl_login\n";
+print "imapd_tls_login.value $imapd_tls_login\n";
+print "pop3d_login.value $pop3d_login\n";
+print "pop3d_secured_login.value $pop3d_secured_login\n";
+print "pop3d_ssl_login.value $pop3d_ssl_login\n";
+print "pop3d_tls_login.value $pop3d_tls_login\n";
+print "total.value $total\n";
+
+save_state($pos, $disconnects, $imapd_login, $imapd_secured_login,
+    $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login,
+    $pop3d_ssl_login, $pop3d_tls_login, $total);
+
+sub parseLogfile 
+{    
+    my ($fname, $start, $stop) = @_;
+
+    my ($logfd, $reset) = tail_open($fname, $start);
+
+    while (tell($logfd) < $stop) 
+    {
+        my $line = <$logfd>;
+        chomp ($line);
+
+        if($line =~ /dovecot/i) 
+        {
+            if($line =~ /imap-login/i)
+            {
+                $total++;
+
+                if($line =~ /secured/i)
+                {
+                    $imapd_secured_login++;
+                }
+                elsif($line =~ /SSL/i) 
+                {
+                    $imapd_ssl_login++;
+                }
+                elsif($line =~ /TLS/i)
+                {
+                    $imapd_tls_login++;
+                }
+                else 
+                {
+                    $imapd_login++;
+                }
+            }
+            elsif($line =~ /pop3-login/i)
+            {
+                $total++;
+
+                if($line =~ /secured/i)
+                {
+                    $pop3d_secured_login++;
+                }
+                elsif($line =~ /SSL/i)
+                {
+                    $pop3d_ssl_login++;
+                }
+                elsif($line =~ /TLS/i)
+                {
+                    $pop3d_tls_login++;
+                }
+                else
+                {
+                    $pop3d_login++;
+                }
+            }
+            elsif($line =~ /Disconnected/i)
+            {
+                $disconnects++;
+            }
+        }
+    }
+    return tail_close($logfd);
+}
+
+# vim:syntax=perl
