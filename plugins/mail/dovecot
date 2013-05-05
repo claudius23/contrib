@@ -60,8 +60,8 @@ if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
 {
     if (-d $LOGDIR)
     {
-    if (-f $logfile)
-    {
+        if (-f $logfile)
+        {
             if (-r $logfile)
             {
                 print "yes\n";
@@ -71,11 +71,11 @@ if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
             {
                 print "no (logfile '$logfile' not readable)\n";
             }
-    }
-    else
-    {
-        print "no (logfile '$logfile' not found)\n";
-    }
+        }
+        else
+        {
+            print "no (logfile '$logfile' not found)\n";
+        }
     }
     else
     {
@@ -97,31 +97,31 @@ if ( $ARGV[0] and $ARGV[0] eq "config" )
     print "connected.label connected users\n";
     print "connected.type GAUGE\n";
     print "connected.info Number of users curently connected\n";
-    print "imapd_login.label IMAP logins\n";
-    print "imapd_login.type DERIVE\n";
-    print "imapd_login.info Number of unencrypted imapd logins\n";
-    print "imapd_secured_login.label IMAP secured logins \n";
-    print "imapd_secured_login.type DERIVE\n";
-    print "imapd_secured_login.info Number of imapd secured logins\n";
-    print "imapd_ssl_login.label IMAP SSL logins \n";
-    print "imapd_ssl_login.type DERIVE\n";
-    print "imapd_ssl_login.info Number of imapd SSL logins\n";
-    print "imapd_tls_login.label IMAP TLS logins \n";
-    print "imapd_tls_login.type DERIVE\n";
-    print "imapd_tls_login.info Number of imapd TLS logins\n";
-    print "pop3d_login.label POP3 logins\n";
-    print "pop3d_login.type DERIVE\n";
-    print "pop3d_login.info Number of unencrypted pop3d logins\n";
-    print "pop3d_secured_login.label POP3 secured logins\n";
-    print "pop3d_secured_login.type DERIVE\n";
-    print "pop3d_secured_login.info Number of pop3d secured logins\n";
-    print "pop3d_ssl_login.label POP3 SSL logins\n";
-    print "pop3d_ssl_login.type DERIVE\n";
-    print "pop3d_ssl_login.info Number of pop3d SSL logins\n";
-    print "pop3d_tls_login.label POP3 TLS logins\n";
-    print "pop3d_tls_login.type DERIVE\n";
-    print "pop3d_tls_login.info Number of pop3d TLS logins\n";
-    print "total.label Total logins\n";
+    print "imapd.label imap\n";
+    print "imapd.type DERIVE\n";
+    print "imapd.info Number of unencrypted imapd logins\n";
+    print "imapd_secured.label imap secured\n";
+    print "imapd_secured.type DERIVE\n";
+    print "imapd_secured.info Number of imapd secured logins\n";
+    print "imapd_ssl.label imap SSL\n";
+    print "imapd_ssl.type DERIVE\n";
+    print "imapd_ssl.info Number of imapd SSL logins\n";
+    print "imapd_tls.label imap TLS\n";
+    print "imapd_tls.type DERIVE\n";
+    print "imapd_tls.info Number of imapd TLS logins\n";
+    print "pop3d.label pop3\n";
+    print "pop3d.type DERIVE\n";
+    print "pop3d.info Number of unencrypted pop3d logins\n";
+    print "pop3d_secured.label pop3 secured\n";
+    print "pop3d_secured.type DERIVE\n";
+    print "pop3d_secured.info Number of pop3d secured logins\n";
+    print "pop3d_ssl.label pop3 SSL\n";
+    print "pop3d_ssl.type DERIVE\n";
+    print "pop3d_ssl.info Number of pop3d SSL logins\n";
+    print "pop3d_tls.label pop3 TLS\n";
+    print "pop3d_tls.type DERIVE\n";
+    print "pop3d_tls.info Number of pop3d TLS logins\n";
+    print "total.label total\n";
     print "total.type DERIVE\n";
     print "total.info Number of total logins\n";
     exit 0;
@@ -130,31 +130,31 @@ if ( $ARGV[0] and $ARGV[0] eq "config" )
 if (! -f $logfile) 
 {
     print "connected.value U\n";
-    print "imapd_login.value U\n";
-    print "imapd_secured_login.value U\n";
-    print "imapd_ssl_login.value U\n";
-    print "imapd_tls_login.value U\n";
-    print "pop3d_login.value U\n";
-    print "pop3d_secured_login.value U\n";
-    print "pop3d_ssl_login.value U\n";
-    print "pop3d_tls_login.value U\n";
+    print "imapd.value U\n";
+    print "imapd_secured.value U\n";
+    print "imapd_ssl.value U\n";
+    print "imapd_tls.value U\n";
+    print "pop3d.value U\n";
+    print "pop3d_secured.value U\n";
+    print "pop3d_ssl.value U\n";
+    print "pop3d_tls.value U\n";
     print "total.value U\n";
     exit 0;
 }
 
-my ($pos, $disconnects, $imapd_login, $imapd_secured_login, 
-    $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login,
-    $pop3d_ssl_login, $pop3d_tls_login, $total) = restore_state();
+my ($pos, $disconnects, $imapd, $imapd_secured, 
+    $imapd_ssl, $imapd_tls, $pop3d, $pop3d_secured,
+    $pop3d_ssl, $pop3d_tls, $total) = restore_state();
 
 $disconnects = 0 unless defined($disconnects);
-$imapd_login = 0 unless defined($imapd_login);
-$imapd_secured_login = 0 unless defined($imapd_secured_login);
-$imapd_ssl_login = 0 unless defined($imapd_ssl_login);
-$imapd_tls_login = 0 unless defined($imapd_tls_login);
-$pop3d_login = 0 unless defined($pop3d_login);
-$pop3d_secured_login = 0 unless defined($pop3d_secured_login);
-$pop3d_ssl_login = 0 unless defined($pop3d_ssl_login);
-$pop3d_tls_login = 0 unless defined($pop3d_tls_login);
+$imapd = 0 unless defined($imapd);
+$imapd_secured = 0 unless defined($imapd_secured);
+$imapd_ssl = 0 unless defined($imapd_ssl);
+$imapd_tls = 0 unless defined($imapd_tls);
+$pop3d = 0 unless defined($pop3d);
+$pop3d_secured = 0 unless defined($pop3d_secured);
+$pop3d_ssl = 0 unless defined($pop3d_ssl);
+$pop3d_tls = 0 unless defined($pop3d_tls);
 $total = 0 unless defined($total);
 
 my $startsize = (stat $logfile)[7];
@@ -170,19 +170,19 @@ $pos = parseLogfile($logfile, $pos, $startsize);
 my $connected = - $disconnects + $total;
 
 print "connected.value $connected\n";
-print "imapd_login.value $imapd_login\n";
-print "imapd_secured_login.value $imapd_secured_login\n";
-print "imapd_ssl_login.value $imapd_ssl_login\n";
-print "imapd_tls_login.value $imapd_tls_login\n";
-print "pop3d_login.value $pop3d_login\n";
-print "pop3d_secured_login.value $pop3d_secured_login\n";
-print "pop3d_ssl_login.value $pop3d_ssl_login\n";
-print "pop3d_tls_login.value $pop3d_tls_login\n";
+print "imapd.value $imapd\n";
+print "imapd_secured.value $imapd_secured\n";
+print "imapd_ssl.value $imapd_ssl\n";
+print "imapd_tls.value $imapd_tls\n";
+print "pop3d.value $pop3d\n";
+print "pop3d_secured.value $pop3d_secured\n";
+print "pop3d_ssl.value $pop3d_ssl\n";
+print "pop3d_tls.value $pop3d_tls\n";
 print "total.value $total\n";
 
-save_state($pos, $disconnects, $imapd_login, $imapd_secured_login,
-    $imapd_ssl_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login,
-    $pop3d_ssl_login, $pop3d_tls_login, $total);
+save_state($pos, $disconnects, $imapd, $imapd_secured,
+    $imapd_ssl, $imapd_tls, $pop3d, $pop3d_secured,
+    $pop3d_ssl, $pop3d_tls, $total);
 
 sub parseLogfile 
 {    
@@ -203,19 +203,19 @@ sub parseLogfile
 
                 if($line =~ /secured/i)
                 {
-                    $imapd_secured_login++;
+                    $imapd_secured++;
                 }
                 elsif($line =~ /SSL/i) 
                 {
-                    $imapd_ssl_login++;
+                    $imapd_ssl++;
                 }
                 elsif($line =~ /TLS/i)
                 {
-                    $imapd_tls_login++;
+                    $imapd_tls++;
                 }
                 else 
                 {
-                    $imapd_login++;
+                    $imapd++;
                 }
             }
             elsif($line =~ /pop3-login/i)
@@ -224,19 +224,19 @@ sub parseLogfile
 
                 if($line =~ /secured/i)
                 {
-                    $pop3d_secured_login++;
+                    $pop3d_secured++;
                 }
                 elsif($line =~ /SSL/i)
                 {
-                    $pop3d_ssl_login++;
+                    $pop3d_ssl++;
                 }
                 elsif($line =~ /TLS/i)
                 {
-                    $pop3d_tls_login++;
+                    $pop3d_tls++;
                 }
                 else
                 {
-                    $pop3d_login++;
+                    $pop3d++;
                 }
             }
             elsif($line =~ /Disconnected/i)
