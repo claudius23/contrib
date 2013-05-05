@@ -1,0 +1,207 @@
+#!/usr/local/bin/perl
+# -*- perl -*-
+
+=head1 NAME
+
+dovecot - plugin to monitor the dovecot mail server logins
+
+=head1 APPLICABLE SYSTEMS
+
+Hosts running dovecot
+
+=head1 CONFIGURATION
+
+Configuration parameters for @@CONFDIR@@/dovecot,
+if you need to override the defaults below:
+
+ [dovecot]
+  env.logdir  - Which logfile to use
+  env.logfile - What file to read in logdir
+
+=head2 DEFAULT CONFIGURATION
+
+ [dovecot]
+  env.logdir  /var/log
+  env.logfile mail.log
+
+=head1 AUTHOR
+
+Claudius Herder
+
+=head1 LICENSE
+
+GPLv2
+
+=head1 MAGIC MARKERS
+
+=begin comment
+
+These magic markers are used by munin-node-configure when installing
+munin-node.
+
+=end comment
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+use strict;
+use warnings;
+
+use Munin::Plugin;
+
+my $LOGDIR  = (defined($ENV{'logdir'}) ? $ENV{'logdir'} : '/var/log');
+my $LOGFILE = (defined($ENV{'logdir'}) ? $ENV{'logfile'} : 'mail.info');
+
+my $logfile = "$LOGDIR/$LOGFILE";
+
+if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
+{
+    if (-d $LOGDIR)
+    {
+	if (-f $logfile)
+	{
+            if (-r $logfile)
+            {
+                print "yes\n";
+                exit 0;
+            }
+            else
+            {
+                print "no (logfile '$logfile' not readable)\n";
+            }
+	}
+	else
+	{
+	    print "no (logfile '$logfile' not found)\n";
+	}
+    }
+    else
+    {
+        print "no (could not find logdir '$LOGDIR')\n";
+    }
+
+    exit 0;
+}
+
+if ( $ARGV[0] and $ARGV[0] eq "config" )
+{
+    print "graph_title dovecot filter statistics\n";
+    print "graph_vlabel mails / \${graph_period}\n";
+    print "graph_category dovecot\n";
+    print "graph_scale no\n";
+    print "graph_args --base 1000 -l 0\n";
+    print "graph_period minute\n";
+    print "graph_total  Total Logins\n";
+
+    print "imapd_login.label IMAP Logins\n";
+    print "imapd_login.type DERIVE\n";
+    print "imapd_login.info Emails dovecot thinks probably contain spam\n";
+    print "imapd_secured_login.label IMAP secured Logins \n";
+    print "imapd_secured_login.type DERIVE\n";
+    print "imapd_secured_login.info Number of imapd TLS Logins caught in email\n";
+    print "imapd_tls_login.label IMAP TLS Logins \n";
+    print "imapd_tls_login.type DERIVE\n";
+    print "imapd_tls_login.info Number of imapd TLS Logins caught in email\n";
+    print "pop3d_login.label POP3 Logins\n";
+    print "pop3d_login.type DERIVE\n";
+    print "pop3d_login.info pop3d_login emails evaluated by dovecot\n";
+    print "pop3d_secured_login.label POP3 secured Logins\n";
+    print "pop3d_secured_login.type DERIVE\n";
+    print "pop3d_secured_login.info Emails dovecot is sure to contain spam\n";
+    print "pop3d_tls_login.label POP3 TLS Logins\n";
+    print "pop3d_tls_login.type DERIVE\n";
+    print "pop3d_tls_login.info Emails dovecot is sure to contain spam\n";
+    exit 0;
+}
+
+if (! -f $logfile) 
+{
+    print "imapd_login.value U\n";
+    print "imapd_secured_login.value U\n";
+    print "imapd_tls_login.value U\n";
+    print "pop3d_login.value U\n";
+    print "pop3d_secured_login.value U\n";
+    print "pop3d_tls_login.value U\n";
+    exit 0;
+}
+
+my ($pos, $imapd_login, $imapd_secured_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login, $pop3d_tls_login) = restore_state();
+
+$imapd_login = 0 unless defined($imapd_login);
+$imapd_secured_login = 0 unless defined($imapd_secured_login);
+$imapd_tls_login = 0 unless defined($imapd_tls_login);
+$pop3d_login = 0 unless defined($pop3d_login);
+$pop3d_secured_login = 0 unless defined($pop3d_secured_login);
+$pop3d_tls_login = 0 unless defined($pop3d_tls_login);
+
+my $startsize = (stat $logfile)[7];
+
+if (!defined $pos)
+{
+    # Initial run.
+    $pos = $startsize;
+}
+
+$pos = parseLogfile($logfile, $pos, $startsize);
+
+print "imapd_login.value $imapd_login\n";
+print "imapd_secured_login.value $imapd_secured_login\n";
+print "imapd_tls_login.value $imapd_tls_login\n";
+print "pop3d_login.value $pop3d_login\n";
+print "pop3d_secured_login.value $pop3d_secured_login\n";
+print "pop3d_tls_login.value $pop3d_tls_login\n";
+
+save_state($pos, $imapd_login, $imapd_secured_login, $imapd_tls_login, $pop3d_login, $pop3d_secured_login, $pop3d_tls_login);
+
+sub parseLogfile 
+{    
+    my ($fname, $start, $stop) = @_;
+
+	my ($logfd, $reset) = tail_open($fname, $start);
+
+    while (tell($logfd) < $stop) 
+    {
+	my $line = <$logfd>;
+	chomp ($line);
+
+	if($line =~ /dovecot/i) 
+	{
+                if($line =~ /imap-login/i)
+	        {
+                        if($line =~ /TLS/i) 
+	                {
+                                $imapd_tls_login++;
+                        }
+                        elsif($line =~ /secured/i) 
+	                {
+                                $imapd_secured_login++;
+                        }
+                        else 
+	                {
+                                $imapd_login++;
+                        }
+                }
+                elsif($line =~ /pop3-login/i)
+	        {
+                        if($line =~ /TLS/i)
+	                {
+                            $pop3d_tls_login++;
+                        }
+                        elsif($line =~ /secured/i)
+	                {
+                            $pop3d_secured_login++;
+                        }
+                        else
+	                {
+                            $pop3d_login++;
+                        }
+                }
+	}
+
+    }
+    return tail_close($logfd);
+}
+
+# vim:syntax=perl
