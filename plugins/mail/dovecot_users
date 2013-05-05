@@ -122,8 +122,11 @@ if (!defined $pos)
 
 $pos = parseLogfile($logfile, $pos, $startsize);
 
+if($logins < $disconnects)
+{
+    $disconnects = $logins;
+}
 my $connected = $logins - $disconnects;
-$connected = 0 unless($connected > 0);
 
 print "connected.value $connected\n";
 
