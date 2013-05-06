@@ -18,12 +18,14 @@ if you need to override the defaults below:
  [dovecot]
   env.logdir  - Which logfile to use
   env.logfile - What file to read in logdir
+  env.doveadm - Where is doveadm
 
 =head2 DEFAULT CONFIGURATION
 
  [dovecot]
   env.logdir  /var/log
   env.logfile mail.log
+  env.doveadm /usr/bin/doveadm
 
 =head1 AUTHOR
 
@@ -54,6 +56,7 @@ use Munin::Plugin;
 
 my $LOGDIR  = (defined($ENV{'logdir'}) ? $ENV{'logdir'} : '/var/log');
 my $LOGFILE = (defined($ENV{'logdir'}) ? $ENV{'logfile'} : 'mail.info');
+my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : '/usr/local/bin/doveadm');
 
 my $logfile = "$LOGDIR/$LOGFILE";
 
@@ -94,23 +97,37 @@ if ( $ARGV[0] and $ARGV[0] eq "config" )
     print "graph_scale no\n";
     print "graph_args --base 1000 -l 0\n";
     print "graph_period minute\n";
+    print "graph_total total\n";
 
-    print "connected.label connected users\n";
-    print "connected.type GAUGE\n";
-    print "connected.info Number of users curently connected\n";
+    print "imap.label imap\n";
+    print "imap.type GAUGE\n";
+    print "imap.info Number of imap users curently connected\n";
+    print "pop3.label pop3\n";
+    print "pop3.type GAUGE\n";
+    print "pop3.info Number of pop3 users curently connected\n";
+    print "sieve.label sieve\n";
+    print "sieve.type GAUGE\n";
+    print "sieve.info Number of sieve users curently connected\n";
     exit 0;
 }
 
 if (! -f $logfile) 
 {
-    print "connected.value U\n";
+    print "imap.value U\n";
+    print "pop3.value U\n";
+    print "sieve.value U\n";
     exit 0;
 }
 
-my ($pos, $disconnects, $logins) = restore_state();
+my ($pos, $disconnects_imap,$disconnects_pop3, $disconnects_sieve,
+    $logins_imap, $logins_pop3, $logins_sieve) = restore_state();
 
-$disconnects = 0 unless defined($disconnects);
-$logins = 0 unless defined($logins);
+$disconnects_imap = 0 unless defined($disconnects_imap);
+$disconnects_pop3 = 0 unless defined($disconnects_pop3);
+$disconnects_sieve = 0 unless defined($disconnects_sieve);
+$logins_imap = 0 unless defined($logins_imap);
+$logins_pop3 = 0 unless defined($logins_pop3);
+$logins_sieve = 0 unless defined($logins_sieve);
 
 my $startsize = (stat $logfile)[7];
 
@@ -122,15 +139,70 @@ if (!defined $pos)
 
 $pos = parseLogfile($logfile, $pos, $startsize);
 
-if($logins < $disconnects)
+my $adm_imap = 0;
+my $adm_pop3 = 0;
+my $adm_sieve = 0;
+
+foreach my $line (split(/\n/, `$DOVEADM -f flow who -1` ))
 {
-    $disconnects = $logins;
+    my (undef, $adm_proto, undef, undef ) = (split(/ /,$line));
+
+    if($line =~ /imap/)
+    {
+        $adm_imap++;
+    }
+    elsif($line =~ /pop/)
+    {
+        $adm_pop3++;
+    }
+    elsif($line =~ /sieve/)
+    {
+        $adm_sieve++;
+    }
 }
-my $connected = $logins - $disconnects;
 
-print "connected.value $connected\n";
+my $imap = $logins_imap - $disconnects_imap;
 
-save_state($pos, $disconnects, $logins);
+if($imap < $adm_imap)
+{
+    $logins_imap = $disconnects_imap + $adm_imap;
+}
+elsif($imap > $adm_imap)
+{
+    $disconnects_imap = $logins_imap - $adm_imap;
+}
+$imap = $logins_imap - $disconnects_imap;
+
+my $pop3 = $logins_pop3 - $disconnects_pop3;
+
+if($pop3 < $adm_pop3)
+{
+    $logins_pop3 = $disconnects_pop3 + $adm_pop3;
+}
+elsif($pop3 > $adm_pop3)
+{
+    $disconnects_pop3 = $logins_pop3 - $adm_pop3;
+}
+$pop3 = $logins_pop3 - $disconnects_pop3;
+
+my $sieve = $logins_sieve - $disconnects_sieve;
+
+if($sieve < $adm_sieve)
+{
+    $logins_sieve = $disconnects_sieve + $adm_sieve;
+}
+elsif($sieve > $adm_sieve)
+{
+    $disconnects_sieve = $logins_sieve - $adm_sieve;
+}
+$sieve = $logins_sieve - $disconnects_sieve;
+
+print "imap.value $imap\n";
+print "pop3.value $pop3\n";
+print "sieve.value $sieve\n";
+
+save_state($pos, $disconnects_imap,$disconnects_pop3, $disconnects_sieve,
+    $logins_imap, $logins_pop3, $logins_sieve);
 
 sub parseLogfile 
 {    
@@ -147,12 +219,33 @@ sub parseLogfile
         {
             if($line =~ /Login:/)
             {
-                $logins++;
-
+                if($line =~ /imap-login:/)
+                {
+                $logins_imap++;
+                }
+                elsif($line =~ /pop3-login:/)
+                {
+                $logins_pop3++;
+                }
+                if($line =~ /managesieve-login:/)
+                {
+                $logins_sieve++;
+                }
             }
             elsif($line =~ /Disconnected(:| for inactivity)/)
             {
-                $disconnects++;
+                if($line =~ /imap\(/)
+                {
+                $disconnects_imap++;
+                }
+                elsif($line =~ /pop3\(/)
+                {
+                $disconnects_pop3++;
+                }
+                if($line =~ /managesieve\(/)
+                {
+                $disconnects_sieve++;
+                }
             }
         }
     }
