@@ -145,12 +145,12 @@ sub parseLogfile
 
         if($line =~ /dovecot/) 
         {
-            if($line =~ /Login/)
+            if($line =~ /Login:/)
             {
                 $logins++;
 
             }
-            elsif($line =~ /Disconnected/)
+            elsif($line =~ /Disconnected(:| for inactivity)/)
             {
                 $disconnects++;
             }
