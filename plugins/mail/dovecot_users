@@ -59,10 +59,11 @@ if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
     exit 0;
 }
 
-
-
-my %users;
-
+my %users = (
+    imap => '0',
+    pop3 => '0',
+    sieve => '0'
+);
 
 if ( $ARGV[0] and $ARGV[0] eq "config" )
 {
