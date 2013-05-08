@@ -24,7 +24,6 @@ if you need to override the defaults below:
  [dovecot]
   env.logdir  /var/log
   env.logfile mail.log
-  env.doveadm /usr/bin/doveadm
 
 =head1 AUTHOR
 
@@ -55,7 +54,7 @@ use Munin::Plugin;
 
 my $LOGDIR  = (defined($ENV{'logdir'}) ? $ENV{'logdir'} : '/var/log');
 my $LOGFILE = (defined($ENV{'logdir'}) ? $ENV{'logfile'} : 'mail.info');
-my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : '/usr/bin/doveadm');
+my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : 'doveadm');
 
 my $logfile = "$LOGDIR/$LOGFILE";
 
@@ -64,29 +63,8 @@ if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
     `which $DOVEADM >/dev/null 2>/dev/null`;
     if (!$?)
     {
-        if (-d $LOGDIR)
-        {
-            if (-f $logfile)
-            {
-                if (-r $logfile)
-                {
-                    print "yes\n";
-                    exit 0;
-                }
-                else
-                {
-                    print "no (logfile '$logfile' not readable)\n";
-                }
-            }
-            else
-            {
-                print "no (logfile '$logfile' not found)\n";
-            }
-        }
-        else
-        {
-            print "no (could not find logdir '$LOGDIR')\n";
-        }
+        my (undef, $s) = testfile($logfile,"autoconf");
+        print "$s\n"
     }
     else
     {
@@ -98,9 +76,6 @@ if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
 my @state = restore_state();
 
 my $pos = shift @state;
-
-my $startsize = (stat $logfile)[7];
-$pos = $startsize unless defined($pos);
 
 my %logins = @state;
 
@@ -123,7 +98,20 @@ if ( $ARGV[0] and $ARGV[0] eq "config" )
     exit 0;
 }
 
-$pos = parseLogfile($logfile, $pos, $startsize);
+my $startsize = (stat $logfile)[7];
+$pos = $startsize unless defined($pos);
+
+if ($startsize < $pos)
+{
+    # Log rotated
+    my $rotlogfile = rotlog($logfile);
+    if ( testfile($rotlogfile)) {
+        parselogfile ($rotlogfile, $pos, (stat $rotlogfile)[7]);
+    }
+    $pos = 0;
+}
+
+$pos = parselogfile($logfile, $pos, $startsize);
 
 foreach my $i (sort keys %logins)
 {
@@ -132,7 +120,7 @@ foreach my $i (sort keys %logins)
 
 save_state($pos, %logins);
 
-sub parseLogfile
+sub parselogfile
 {
     my ($fname, $start, $stop) = @_;
 
