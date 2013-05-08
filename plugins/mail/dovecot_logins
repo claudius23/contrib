@@ -17,12 +17,14 @@ if you need to override the defaults below:
  [dovecot]
   env.logdir  - Which logfile to use
   env.logfile - What file to read in logdir
+  env.doveadm - Path to doveadm binary
 
 =head2 DEFAULT CONFIGURATION
 
  [dovecot]
   env.logdir  /var/log
   env.logfile mail.log
+  env.doveadm /usr/bin/doveadm
 
 =head1 AUTHOR
 
@@ -53,35 +55,43 @@ use Munin::Plugin;
 
 my $LOGDIR  = (defined($ENV{'logdir'}) ? $ENV{'logdir'} : '/var/log');
 my $LOGFILE = (defined($ENV{'logdir'}) ? $ENV{'logfile'} : 'mail.info');
+my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : '/usr/bin/doveadm');
 
 my $logfile = "$LOGDIR/$LOGFILE";
 
 if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
 {
-    if (-d $LOGDIR)
+    `which $DOVEADM >/dev/null 2>/dev/null`;
+    if (!$?)
     {
-        if (-f $logfile)
+        if (-d $LOGDIR)
         {
-            if (-r $logfile)
+            if (-f $logfile)
             {
-                print "yes\n";
-                exit 0;
+                if (-r $logfile)
+                {
+                    print "yes\n";
+                    exit 0;
+                }
+                else
+                {
+                    print "no (logfile '$logfile' not readable)\n";
+                }
             }
             else
             {
-                print "no (logfile '$logfile' not readable)\n";
+                print "no (logfile '$logfile' not found)\n";
             }
         }
         else
         {
-            print "no (logfile '$logfile' not found)\n";
+            print "no (could not find logdir '$LOGDIR')\n";
         }
     }
     else
     {
-        print "no (could not find logdir '$LOGDIR')\n";
+         print "no (could not find dovecot)\n";
     }
-
     exit 0;
 }
 
@@ -93,15 +103,6 @@ my $startsize = (stat $logfile)[7];
 $pos = $startsize unless defined($pos);
 
 my %logins = @state;
-
-if (! -f $logfile) 
-{
-    foreach my $i (sort keys %logins)
-    {
-        print "$i.value U\n";
-    }
-    exit 0;
-}
 
 if ( $ARGV[0] and $ARGV[0] eq "config" )
 {
@@ -131,18 +132,18 @@ foreach my $i (sort keys %logins)
 
 save_state($pos, %logins);
 
-sub parseLogfile 
-{    
+sub parseLogfile
+{
     my ($fname, $start, $stop) = @_;
 
     my ($logfd, $reset) = tail_open($fname, $start);
 
-    while (tell($logfd) < $stop) 
+    while (tell($logfd) < $stop)
     {
         my $line = <$logfd>;
         chomp ($line);
 
-        if($line =~ /dovecot/) 
+        if($line =~ /dovecot/)
         {
             if($line =~ /imap-login: Login:/)
             {
@@ -150,7 +151,7 @@ sub parseLogfile
                 {
                     $logins{imap_secured}++;
                 }
-                elsif($line =~ /SSL/) 
+                elsif($line =~ /SSL/)
                 {
                     $logins{imap_ssl}++;
                 }
@@ -158,7 +159,7 @@ sub parseLogfile
                 {
                     $logins{imap_tls}++;
                 }
-                else 
+                else
                 {
                     $logins{imap}++;
                 }

@@ -16,7 +16,7 @@ Configuration parameters for @@CONFDIR@@/dovecot,
 if you need to override the defaults below:
 
  [dovecot]
-  env.doveadm - Where is doveadm
+  env.doveadm - Path to doveadm binary
 
 =head2 DEFAULT CONFIGURATION
 
@@ -50,12 +50,19 @@ use warnings;
 
 use Munin::Plugin;
 
-my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : '/usr/local/bin/doveadm');
+my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : '/usr/bin/doveadm');
 
 if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
 {
-        print "no (could not find logdir)\n";
-
+    `which $DOVEADM >/dev/null 2>/dev/null`;
+    if (!$?)
+    {
+        print "yes\n"
+    }
+    else
+    {
+        print "no (could not find dovecot)\n";
+    }
     exit 0;
 }
 
