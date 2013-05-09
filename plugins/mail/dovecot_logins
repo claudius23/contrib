@@ -53,7 +53,7 @@ use warnings;
 use Munin::Plugin;
 
 my $LOGDIR  = (defined($ENV{'logdir'}) ? $ENV{'logdir'} : '/var/log');
-my $LOGFILE = (defined($ENV{'logdir'}) ? $ENV{'logfile'} : 'mail.info');
+my $LOGFILE = (defined($ENV{'logfile'}) ? $ENV{'logfile'} : 'mail.info');
 my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : 'doveadm');
 
 my $logfile = "$LOGDIR/$LOGFILE";
@@ -106,12 +106,12 @@ if ($startsize < $pos)
     # Log rotated
     my $rotlogfile = rotlog($logfile);
     if ( testfile($rotlogfile)) {
-        parselogfile ($rotlogfile, $pos, (stat $rotlogfile)[7]);
+        parseLogfile($rotlogfile, $pos, (stat $rotlogfile)[7]);
     }
     $pos = 0;
 }
 
-$pos = parselogfile($logfile, $pos, $startsize);
+$pos = parseLogfile($logfile, $pos, $startsize);
 
 foreach my $i (sort keys %logins)
 {
@@ -120,7 +120,7 @@ foreach my $i (sort keys %logins)
 
 save_state($pos, %logins);
 
-sub parselogfile
+sub parseLogfile
 {
     my ($fname, $start, $stop) = @_;
 

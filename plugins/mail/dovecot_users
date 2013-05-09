@@ -50,7 +50,7 @@ use warnings;
 
 use Munin::Plugin;
 
-my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : '/usr/bin/doveadm');
+my $DOVEADM = (defined($ENV{'doveadm'}) ? $ENV{'doveadm'} : 'doveadm');
 
 if ( defined($ARGV[0]) and $ARGV[0] eq "autoconf" )
 {
