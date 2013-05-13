@@ -231,7 +231,7 @@ sub do_fetch_fs {
 }
 
 sub do_config {
-    foreach my $fs ( sort keys %{$filesystems}) {
+    foreach my $fs ( keys %{$filesystems}) {
         do_config_fs($fs);
     }
 }
@@ -252,7 +252,7 @@ sub do_suggest {
 }
 
 sub do_fetch {
-    foreach my $fs ( sort keys %{$filesystems}) {
+    foreach my $fs ( keys %{$filesystems}) {
         do_fetch_fs($fs);
     }
 }
